@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # "helm.sh/hook": "pre-install"
+data:
+  fluentd-conf: |
+    <source>
+      @type  forward
+      @id    input1
+      @label @mainstream
+      port  24224
+    </source>
+
+    <filter **>
+      @type stdout
+    </filter>
+
+    <label @mainstream>
+      <match **>
+        @type elasticsearch
+        @id   output1
+        hosts {{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}
+        logstash_format true
+      </match>
+    </label>
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      volumes:
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
+          items:
+          - key: fluentd-conf
+            path: fluent.conf
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        volumeMounts:
+          - name: fluentd-config
+            mountPath: /fluentd/etc/
+            readOnly: true
+        ports:
+          - name: http-in
+            containerPort: 24224
+          - name: fluentd
+            containerPort: 5140
+        resources:
+{{ toYaml .Values.resources | indent 12 }}

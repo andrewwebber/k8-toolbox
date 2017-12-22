@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: keepalived-controller
+  namespace: kube-system
+  labels:
+    k8s-app: keepalived-controller
+spec:
+  hostNetwork: true
+  containers:
+  - name: keepalived-controller
+    image: andrewwebber/keepalived
+    imagePullPolicy: Always
+    securityContext:
+      privileged: true
+    env:
+      - name: KEEPALIVED_VIP
+        value: "10.132.0.120"
+      - name: ROUTER_ID
+        value: "52"

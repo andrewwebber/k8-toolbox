@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    name: kubelet-version
+  name: kubelet-version
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: kubelet-version
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: kubelet-version
+    spec:
+      volumes:
+      - name: kubernetes
+        hostPath:
+          path: /etc/kubernetes
+      - name: var-run-dbus
+        hostPath:
+          path: /var/run/dbus
+      - name: run-systemd
+        hostPath:
+          path: /run/systemd
+      containers:
+      - name: kubelet-version
+        image: andrewwebber/k8-kubelet-version:v1
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /etc/kubernetes
+          name: kubernetes
+        - mountPath: /var/run/dbus
+          name: var-run-dbus
+        - mountPath: /run/systemd
+          name: run-systemd
+        env:
+        - name: STARTUP_SCRIPT
+          value: |
+            #! /bin/bash
+            cat > /etc/kubernetes/kubelet.env <<EOF | echo
+            KUBELET_IMAGE_URL=quay.io/coreos/hyperkube
+            KUBELET_IMAGE_TAG=v1.7.5_coreos.0
+            EOF
+            cat /etc/kubernetes/kubelet.env
+            systemctl status kubelet
+            systemctl restart kubelet

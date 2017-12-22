@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: keepalived-worker
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        app: keepalived-worker
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      hostNetwork: true
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/node: ""
+      containers:
+      - name: keepalived-worker
+        image: andrewwebber/keepalived
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        env:
+          - name: KEEPALIVED_VIP
+            value: "110.132.0.130"
+          - name: ROUTER_ID
+            value: "54"
